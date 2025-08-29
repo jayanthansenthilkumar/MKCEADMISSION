@@ -1,944 +1,538 @@
-// MKCE Admission Portal - Main JavaScript
-
-// Login functionality
+// Dashboard functionality
 $(document).ready(function() {
-    // Initialize login form if exists
-    if ($('#loginForm').length) {
-        initializeLogin();
-    }
+    // Initialize dashboard
+    initializeDashboard();
     
-    // Initialize admission dashboard if exists
-    if ($('.dashboard-container').length) {
-        initializeDashboard();
-    }
-});
-
-// Login Functions
-function initializeLogin() {
-    $('#loginForm').on('submit', function(e){
-        e.preventDefault();
-        
-        // Show loading state
-        Swal.fire({
-            title: 'Logging in...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        $.ajax({
-            url: 'login.php',
-            type: 'POST',
-            data: $(this).serialize(),
-            dataType: 'json',
-            success: function(response){
-                if(response.status === 'success'){
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Login Successful!',
-                        text: 'Welcome to MKCE Admission Portal',
-                        timer: 1500,
-                        showConfirmButton: true
-                    }).then(() => {
-                        window.location.href = 'admission.php';
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Login Failed',
-                        text: response.message || 'Invalid credentials'
-                    });
-                }
-            },
-            error: function(){
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Connection Error',
-                    text: 'Something went wrong. Please try again!'
-                });
-            }
-        });
-    });
-}
-
-// Dashboard Functions
-function initializeDashboard() {
-    // Set current date
-    const now = new Date();
-    const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    };
-    if ($('.welcome-date').length) {
-        $('.welcome-date').text(now.toLocaleDateString('en-US', options));
-    }
-    
-    // Initialize sidebar navigation
-    initializeSidebarNavigation();
-    
-    // Initialize sidebar toggle
-    $('.sidebar-toggle, .menu-toggle').click(function() {
-        $('.sidebar').toggleClass('collapsed');
-    });
-    
-    // Mobile sidebar toggle
-    $('.menu-toggle').click(function() {
-        $('.sidebar').toggleClass('open');
-    });
-    
-    // Close sidebar on mobile when clicking outside
-    $(document).click(function(e) {
-        if ($(window).width() <= 768) {
-            if (!$(e.target).closest('.sidebar, .menu-toggle').length) {
-                $('.sidebar').removeClass('open');
-            }
-        }
-    });
-    
-    // Initialize existing functionality
-    initializeTabs();
+    // Load initial data
     loadDashboardStats();
-    initializeAdmissionForm();
-    initializeStudentDetailsForm();
-    loadAdmissionsList();
-    loadStudentsList();
-    initializeSearchAndFilters();
-}
-
-// Initialize Sidebar Navigation
-function initializeSidebarNavigation() {
-    $('.nav-link').click(function(e) {
-        e.preventDefault();
-        
-        // Remove active class from all nav items
-        $('.nav-item').removeClass('active');
-        
-        // Add active class to clicked item
-        $(this).parent('.nav-item').addClass('active');
-        
-        // Get target tab
-        var target = $(this).data('tab');
-        
-        // Show target content
-        if (target) {
-            switchTab(target);
-        }
-    });
+    loadAdmissions();
     
-    // Quick action card clicks
-    $('.action-card').click(function() {
-        var action = $(this).data('action');
-        switch(action) {
-            case 'new-admission':
-                switchTab('admissions-tab');
-                break;
-            case 'confirmed-students':
-                switchTab('students-tab');
-                break;
-            case 'export-data':
-                showExportOptions();
-                break;
-            case 'system-settings':
-                showSettings();
-                break;
-        }
-    });
-}
-
-// Tab Management
-function initializeTabs() {
-    $('.nav-tab').on('click', function() {
-        const targetTab = $(this).data('tab');
-        switchTab(targetTab);
-    });
-}
-
-// Switch Tab Function
-function switchTab(targetTab) {
-    // Update active tab (both sidebar and horizontal tabs)
-    $('.nav-tab, .nav-link').removeClass('active');
-    $('.nav-item').removeClass('active');
-    
-    // Set active states
-    $('[data-tab="' + targetTab + '"]').addClass('active');
-    $('[data-tab="' + targetTab + '"]').parent('.nav-item').addClass('active');
-    
-    // Show target content
-    $('.tab-content').removeClass('active');
-    $('#' + targetTab).addClass('active');
-    
-    // Load specific content based on tab
-    switch(targetTab) {
-        case 'dashboard-tab':
-            loadDashboardStats();
-            break;
-        case 'admissions-tab':
-            loadAdmissionsList();
-            break;
-        case 'students-tab':
-            loadStudentsList();
-            break;
-        case 'reports-tab':
-            loadReports();
-            break;
-    }
-}
-
-// Load Dashboard Statistics
-function loadDashboardStats() {
-    $.ajax({
-        url: 'api/get_stats.php',
-        type: 'GET',
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                // Animate counters
-                $('.stat-value').each(function() {
-                    var statType = $(this).data('stat');
-                    if (response.data[statType] !== undefined) {
-                        animateCounter($(this), response.data[statType]);
-                    }
-                });
-                
-                // Update existing stat displays
-                $('#totalApplications').text(response.data.total_applications || 0);
-                $('#pendingReview').text(response.data.pending_review || 0);
-                $('#confirmedStudents').text(response.data.confirmed_students || 0);
-                $('#totalStudents').text(response.data.total_students || 0);
-            }
-        },
-        error: function() {
-            console.log('Error loading dashboard statistics');
-        }
-    });
-}
-
-// Animate counter numbers
-function animateCounter($element, targetValue) {
-    var currentValue = 0;
-    var increment = targetValue / 50;
-    var timer = setInterval(function() {
-        currentValue += increment;
-        if (currentValue >= targetValue) {
-            currentValue = targetValue;
-            clearInterval(timer);
-        }
-        $element.text(Math.floor(currentValue));
-    }, 20);
-}
-
-// Show Export Options
-function showExportOptions() {
-    Swal.fire({
-        title: 'Export Data',
-        html: `
-            <div style="text-align: left;">
-                <p>Choose what data to export:</p>
-                <div style="margin: 15px 0;">
-                    <label style="display: block; margin: 10px 0;">
-                        <input type="radio" name="exportType" value="admissions" checked> 
-                        <span style="margin-left: 8px;">Admission Applications</span>
-                    </label>
-                    <label style="display: block; margin: 10px 0;">
-                        <input type="radio" name="exportType" value="students"> 
-                        <span style="margin-left: 8px;">Confirmed Students</span>
-                    </label>
-                    <label style="display: block; margin: 10px 0;">
-                        <input type="radio" name="exportType" value="all"> 
-                        <span style="margin-left: 8px;">All Data</span>
-                    </label>
-                </div>
-            </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Export',
-        cancelButtonText: 'Cancel'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const exportType = $('input[name="exportType"]:checked').val();
-            exportData(exportType);
-        }
-    });
-}
-
-// Show Settings
-function showSettings() {
-    Swal.fire({
-        title: 'System Settings',
-        html: `
-            <div style="text-align: left;">
-                <p>System settings and configuration options will be available here.</p>
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                    <strong>Current Status:</strong><br>
-                    <small style="color: #666;">System is running normally</small>
-                </div>
-            </div>
-        `,
-        confirmButtonText: 'Close'
-    });
-}
-
-// Admission Form Management
-function initializeAdmissionForm() {
+    // Handle admission form submission
     $('#admissionForm').on('submit', function(e) {
         e.preventDefault();
-        
-        const formData = new FormData(this);
-        
-        // Show loading
-        Swal.fire({
-            title: 'Saving Admission Record...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        $.ajax({
-            url: 'api/save_admission.php',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            dataType: 'json',
-            success: function(response) {
-                if (response.status === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: 'Admission record saved successfully'
-                    }).then(() => {
-                        $('#admissionForm')[0].reset();
-                        loadAdmissionsList();
-                        loadDashboardStats();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: response.message || 'Failed to save admission record'
-                    });
-                }
-            },
-            error: function() {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'Something went wrong. Please try again!'
-                });
-            }
-        });
+        saveAdmission();
     });
-}
-
-// Load Admissions List
-function loadAdmissionsList() {
-    $.ajax({
-        url: 'api/get_admissions.php',
-        type: 'GET',
-        dataType: 'json',
-        success: function(response) {
-            if (response.status === 'success') {
-                displayAdmissionsList(response.data);
-            }
-        },
-        error: function() {
-            console.log('Error loading admissions list');
-        }
-    });
-}
-
-// Display Admissions List
-function displayAdmissionsList(admissions) {
-    let html = '';
     
-    if (admissions.length === 0) {
-        html = '<tr><td colspan="8" class="text-center">No admission records found</td></tr>';
-    } else {
-        admissions.forEach(function(admission) {
-            html += `
-                <tr>
-                    <td>${admission.sid}</td>
-                    <td>${admission.fname} ${admission.lname || ''}</td>
-                    <td>${admission.programme}</td>
-                    <td>${admission.department}</td>
-                    <td>${admission.batch}</td>
-                    <td>${formatDate(admission.doadmission)}</td>
-                    <td><span class="status-badge status-${admission.status.toLowerCase()}">${admission.status}</span></td>
-                    <td>
-                        <button class="btn btn-warning btn-sm" onclick="confirmStudent(${admission.admission_id})">
-                            Confirm
-                        </button>
-                        <button class="btn btn-danger btn-sm" onclick="rejectAdmission(${admission.admission_id})">
-                            Reject
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
+    // Handle search inputs
+    $('#admissionSearch').on('input', function() {
+        const searchTerm = $(this).val();
+        loadAdmissions(searchTerm);
+    });
     
-    $('#admissionsTableBody').html(html);
-}
-
-// Load Students List
-function loadStudentsList() {
-    $.ajax({
-        url: 'api/get_students.php',
-        type: 'GET',
-        dataType: 'json',
-        success: function(response) {
-            if (response.status === 'success') {
-                displayStudentsList(response.data);
-            }
-        },
-        error: function() {
-            console.log('Error loading students list');
-        }
+    $('#studentSearch').on('input', function() {
+        const searchTerm = $(this).val();
+        loadStudents(searchTerm);
     });
-}
-
-// Display Students List
-function displayStudentsList(students) {
-    let html = '';
     
-    if (students.length === 0) {
-        html = '<tr><td colspan="9" class="text-center">No student records found</td></tr>';
-    } else {
-        students.forEach(function(student) {
-            const status = student.mobile && student.email ? 'Complete' : 'Incomplete';
-            const statusClass = status === 'Complete' ? 'status-confirmed' : 'status-pending';
-            
-            html += `
-                <tr>
-                    <td><strong>${student.sid}</strong></td>
-                    <td>${student.fname} ${student.lname || ''}</td>
-                    <td>${student.programme || 'N/A'}</td>
-                    <td>${student.department || 'N/A'}</td>
-                    <td>${student.batch || 'N/A'}</td>
-                    <td>${student.mobile || 'N/A'}</td>
-                    <td>${student.email || 'N/A'}</td>
-                    <td><span class="status-badge ${statusClass}">${status}</span></td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="editStudentDetails('${student.sid}')">
-                            <i class="icon-edit"></i> Edit
-                        </button>
-                        <button class="btn btn-secondary btn-sm" onclick="viewStudentProfile('${student.sid}')">
-                            <i class="icon-eye"></i> View
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-    
-    $('#studentsTableBody').html(html);
-}
-
-// Open Student Details Modal
-function openStudentDetailsModal(sid = null) {
-    if (sid) {
-        // Load existing student data
-        loadStudentForEdit(sid);
-    } else {
-        // Clear form for new student
-        $('#studentDetailsForm')[0].reset();
-        $('#student_sid').val('');
-    }
-    $('#studentDetailsModal').show();
-}
-
-// Close Student Modal
-function closeStudentModal() {
-    $('#studentDetailsModal').hide();
-    $('#studentDetailsForm')[0].reset();
-}
-
-// Load Student for Editing
-function loadStudentForEdit(sid) {
-    $.ajax({
-        url: 'api/get_student_details.php',
-        type: 'GET',
-        data: { sid: sid },
-        dataType: 'json',
-        success: function(response) {
-            if (response.status === 'success') {
-                const student = response.data;
-                
-                // Populate form fields
-                $('#student_sid').val(student.sid);
-                $('#modal_fname').val(student.fname || '');
-                $('#modal_lname').val(student.lname || '');
-                $('#modal_gender').val(student.gender || '');
-                $('#dob').val(student.dob || '');
-                $('#blood').val(student.blood || '');
-                $('#religion').val(student.religion || '');
-                $('#caste').val(student.caste || '');
-                $('#nationality').val(student.nationality || 'Indian');
-                $('#mobile').val(student.mobile || '');
-                $('#pmobile').val(student.pmobile || '');
-                $('#email').val(student.email || '');
-                $('#offemail').val(student.offemail || '');
-                $('#paddress').val(student.paddress || '');
-                $('#taddress').val(student.taddress || '');
-                $('#city').val(student.city || '');
-                $('#state').val(student.state || '');
-                $('#zip').val(student.zip || '');
-                $('#country').val(student.country || 'India');
-                
-                // Academic info (readonly)
-                $('#modal_programme').val(student.programme || '');
-                $('#modal_department').val(student.department || '');
-                $('#modal_batch').val(student.batch || '');
-                $('#cutoff').val(student.cutoff || '');
-                $('#firstgra').val(student.firstgra || '');
-                $('#exam_status').val(student.exam_status || '');
-                $('#exam_mark').val(student.exam_mark || '');
-                $('#languages').val(student.languages || '');
-                
-                // Hostel info
-                $('#hosday').val(student.hosday || '');
-                $('#hosname').val(student.hosname || '');
-                $('#room').val(student.room || '');
-                $('#busno').val(student.busno || '');
-                
-                // Guardian info
-                $('#guarname').val(student.guarname || '');
-                $('#guarmobile').val(student.guarmobile || '');
-                $('#guaraddress').val(student.guaraddress || '');
-                
-                // Documents
-                $('#aadhar').val(student.aadhar || '');
-                $('#pan').val(student.pan || '');
-                $('#saadhar').val(student.saadhar || '');
-                $('#span').val(student.span || '');
-                
-                // SWOT Analysis
-                $('#Strengths').val(student.Strengths || '');
-                $('#Weaknesses').val(student.Weaknesses || '');
-                $('#Opportunities').val(student.Opportunities || '');
-                $('#Threats').val(student.Threats || '');
-                
-                // Store additional data
-                $('#studentDetailsForm').data('admission_id', student.admission_id);
-                $('#studentDetailsForm').data('ayear_id', student.ayear_id);
-                $('#studentDetailsForm').data('doadmission', student.doadmission);
-                $('#studentDetailsForm').data('admcate', student.admcate);
-                $('#studentDetailsForm').data('admtype', student.admtype);
-                
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: response.message || 'Failed to load student details'
-                });
-            }
-        },
-        error: function() {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: 'Failed to load student details'
-            });
-        }
-    });
-}
-
-// Edit Student Details
-function editStudentDetails(sid) {
-    openStudentDetailsModal(sid);
-}
-
-// View Student Profile
-function viewStudentProfile(sid) {
-    $.ajax({
-        url: 'api/get_student_details.php',
-        type: 'GET',
-        data: { sid: sid },
-        dataType: 'json',
-        success: function(response) {
-            if (response.status === 'success') {
-                const student = response.data;
-                showStudentProfileModal(student);
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: response.message || 'Failed to load student profile'
-                });
-            }
-        },
-        error: function() {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: 'Failed to load student profile'
-            });
-        }
-    });
-}
-
-// Show Student Profile Modal
-function showStudentProfileModal(student) {
-    const profileHtml = `
-        <div class="student-profile">
-            <div class="profile-header">
-                <div class="profile-avatar">
-                    <div class="avatar-placeholder">${(student.fname || '').charAt(0)}${(student.lname || '').charAt(0)}</div>
-                </div>
-                <div class="profile-info">
-                    <h2>${student.fname || ''} ${student.lname || ''}</h2>
-                    <p class="student-id">Student ID: ${student.sid}</p>
-                    <p class="department">${student.department || 'N/A'} - ${student.batch || 'N/A'}</p>
-                </div>
-            </div>
-            
-            <div class="profile-content">
-                <div class="profile-section">
-                    <h3><i class="icon-user"></i> Personal Information</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Full Name:</label>
-                            <span>${student.fname || ''} ${student.lname || ''}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Gender:</label>
-                            <span>${student.gender || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Date of Birth:</label>
-                            <span>${student.dob ? formatDate(student.dob) : 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Blood Group:</label>
-                            <span>${student.blood || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Religion:</label>
-                            <span>${student.religion || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Nationality:</label>
-                            <span>${student.nationality || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="profile-section">
-                    <h3><i class="icon-phone"></i> Contact Information</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Mobile:</label>
-                            <span>${student.mobile || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Parent Mobile:</label>
-                            <span>${student.pmobile || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Email:</label>
-                            <span>${student.email || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Official Email:</label>
-                            <span>${student.offemail || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="profile-section">
-                    <h3><i class="icon-book"></i> Academic Information</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Programme:</label>
-                            <span>${student.programme || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Department:</label>
-                            <span>${student.department || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Batch:</label>
-                            <span>${student.batch || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Cutoff Mark:</label>
-                            <span>${student.cutoff || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>First Graduate:</label>
-                            <span>${student.firstgra || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Languages:</label>
-                            <span>${student.languages || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="profile-section">
-                    <h3><i class="icon-home"></i> Address & Accommodation</h3>
-                    <div class="info-grid">
-                        <div class="info-item full-width">
-                            <label>Permanent Address:</label>
-                            <span>${student.paddress || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>City:</label>
-                            <span>${student.city || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>State:</label>
-                            <span>${student.state || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Accommodation:</label>
-                            <span>${student.hosday || 'N/A'}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Hostel/Room:</label>
-                            <span>${student.hosname || 'N/A'} - ${student.room || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                ${student.guarname ? `
-                <div class="profile-section">
-                    <h3><i class="icon-users"></i> Guardian Information</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Guardian Name:</label>
-                            <span>${student.guarname}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Guardian Mobile:</label>
-                            <span>${student.guarmobile || 'N/A'}</span>
-                        </div>
-                        <div class="info-item full-width">
-                            <label>Guardian Address:</label>
-                            <span>${student.guaraddress || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-        </div>
-    `;
-
-    Swal.fire({
-        title: 'Student Profile',
-        html: profileHtml,
-        width: '900px',
-        showCloseButton: true,
-        showConfirmButton: false,
-        customClass: {
-            popup: 'student-profile-modal'
-        }
-    });
-}
-
-// Export Students Data
-function exportStudentsData() {
-    Swal.fire({
-        title: 'Export Data',
-        text: 'This feature will export student data to Excel/CSV format',
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonText: 'Export',
-        cancelButtonText: 'Cancel'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Implementation for data export
-            window.open('api/export_students.php', '_blank');
-        }
-    });
-}
-
-// Initialize Student Details Form
-function initializeStudentDetailsForm() {
-    $('#studentDetailsForm').on('submit', function(e) {
+    // Handle tab switching
+    $('.nav-link').on('click', function(e) {
         e.preventDefault();
-        
-        const formData = new FormData(this);
-        
-        // Add additional data stored in form
-        const admission_id = $(this).data('admission_id');
-        const ayear_id = $(this).data('ayear_id');
-        const doadmission = $(this).data('doadmission');
-        const admcate = $(this).data('admcate');
-        const admtype = $(this).data('admtype');
-        
-        if (admission_id) formData.append('admission_id', admission_id);
-        if (ayear_id) formData.append('ayear_id', ayear_id);
-        if (doadmission) formData.append('doadmission', doadmission);
-        if (admcate) formData.append('admcate', admcate);
-        if (admtype) formData.append('admtype', admtype);
-        
-        // Show loading
-        Swal.fire({
-            title: 'Saving Student Details...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        $.ajax({
-            url: 'api/save_student_details.php',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            dataType: 'json',
-            success: function(response) {
-                if (response.status === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: 'Student details saved successfully'
-                    }).then(() => {
-                        closeStudentModal();
-                        loadStudentsList();
-                        loadDashboardStats();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: response.message || 'Failed to save student details'
-                    });
-                }
-            },
-            error: function() {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'Something went wrong. Please try again!'
-                });
-            }
-        });
+        const tabId = $(this).data('tab');
+        switchTab(tabId);
+        $(this).closest('.nav-item').addClass('active').siblings().removeClass('active');
+    });
+    
+    // Handle quick actions
+    $('.action-card').on('click', function() {
+        const action = $(this).data('action');
+        handleQuickAction(action);
+    });
+});
+
+function initializeDashboard() {
+    // Initialize any dashboard components
+    console.log('Dashboard initialized');
+    
+    // Set up periodic refresh
+    setInterval(function() {
+        if($('#dashboard-tab').hasClass('active')) {
+            loadDashboardStats();
+        }
+    }, 30000); // Refresh every 30 seconds
+}
+
+function loadDashboardStats() {
+    $.get('api/get_dashboard_stats.php')
+    .done(function(response) {
+        if(response.success) {
+            updateStatsDisplay(response.data);
+            updateRecentActivity(response.data.recent_activity);
+        }
+    })
+    .fail(function() {
+        console.error('Failed to load dashboard statistics');
     });
 }
 
-// Confirm Student
+function updateStatsDisplay(stats) {
+    $('#totalApplications').text(stats.total_applications || 0);
+    $('#pendingReview').text(stats.pending_review || 0);
+    $('#confirmedStudents').text(stats.confirmed_students || 0);
+    $('#totalStudents').text(stats.total_students || 0);
+}
+
+function updateRecentActivity(activities) {
+    const activityList = $('#recentActivityList');
+    activityList.empty();
+    
+    if(activities && activities.length > 0) {
+        activities.forEach(function(activity) {
+            const activityItem = `
+                <div class="activity-item">
+                    <div class="activity-icon ${activity.type}">
+                        <i class="fas fa-${activity.icon}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <p>${activity.message}</p>
+                        <span class="activity-time">${formatDateTime(activity.date)}</span>
+                    </div>
+                </div>
+            `;
+            activityList.append(activityItem);
+        });
+    } else {
+        activityList.append('<div class="no-activity">No recent activity</div>');
+    }
+}
+
+function loadAdmissions(search = '') {
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
+    
+    $.get(`api/get_admissions.php${params}`)
+    .done(function(response) {
+        if(response.success) {
+            updateAdmissionsTable(response.data);
+            $('#admissionsBadge').text(response.data.length);
+        }
+    })
+    .fail(function() {
+        console.error('Failed to load admissions');
+    });
+}
+
+function loadStudents(search = '') {
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
+    
+    $.get(`api/get_students_data.php${params}`)
+    .done(function(response) {
+        if(response.success) {
+            updateStudentsTable(response.data);
+            $('#studentsBadge').text(response.data.length);
+        }
+    })
+    .fail(function() {
+        console.error('Failed to load students');
+    });
+}
+
+function updateAdmissionsTable(admissions) {
+    const tbody = $('#admissionsTable tbody');
+    tbody.empty();
+    
+    admissions.forEach(function(admission) {
+        const statusBadge = getStatusBadge(admission.status);
+        const row = `
+            <tr>
+                <td>${admission.sid}</td>
+                <td>${admission.fname} ${admission.lname || ''}</td>
+                <td>${admission.programme}</td>
+                <td>${admission.department}</td>
+                <td>${admission.batch}</td>
+                <td>${admission.doadmission}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-action btn-primary" onclick="viewAdmission('${admission.id}')" title="View">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn-action btn-success" onclick="confirmStudent('${admission.id}')" title="Confirm">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn-action btn-danger" onclick="rejectAdmission('${admission.id}')" title="Reject">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        tbody.append(row);
+    });
+}
+
+function updateStudentsTable(students) {
+    const tbody = $('#studentsTable tbody');
+    tbody.empty();
+    
+    students.forEach(function(student) {
+        const profileBadge = getProfileStatusBadge(student.profile_status);
+        const row = `
+            <tr>
+                <td>${student.sid}</td>
+                <td>${student.fname} ${student.lname || ''}</td>
+                <td>${student.programme}</td>
+                <td>${student.department}</td>
+                <td>${student.batch}</td>
+                <td>${student.mobile}</td>
+                <td>${student.email}</td>
+                <td>${profileBadge}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-action btn-primary" onclick="viewStudentProfile('${student.sid}')" title="View Profile">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        <button class="btn-action btn-warning" onclick="editStudentDetails('${student.sid}')" title="Edit Details">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        tbody.append(row);
+    });
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'pending': '<span class="status-badge status-pending">Pending</span>',
+        'confirmed': '<span class="status-badge status-confirmed">Confirmed</span>',
+        'rejected': '<span class="status-badge status-rejected">Rejected</span>'
+    };
+    return badges[status] || badges['pending'];
+}
+
+function getProfileStatusBadge(status) {
+    const badges = {
+        'Complete': '<span class="status-badge status-confirmed">Complete</span>',
+        'Partial': '<span class="status-badge status-pending">Partial</span>',
+        'Incomplete': '<span class="status-badge status-rejected">Incomplete</span>'
+    };
+    return badges[status] || badges['Incomplete'];
+}
+
+function saveAdmission() {
+    const formData = new FormData($('#admissionForm')[0]);
+    
+    $.ajax({
+        url: 'api/save_admission.php',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if(response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Admission saved successfully',
+                    timer: 2000
+                });
+                $('#admissionForm')[0].reset();
+                loadAdmissions();
+                loadDashboardStats();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response.message || 'Failed to save admission'
+                });
+            }
+        },
+        error: function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error occurred'
+            });
+        }
+    });
+}
+
 function confirmStudent(admissionId) {
     Swal.fire({
         title: 'Confirm Student?',
-        text: "This will move the student to the confirmed list and create their student record.",
+        text: 'This will move the admission to confirmed students',
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#10b981',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Yes, confirm!'
+        confirmButtonText: 'Yes, Confirm',
+        cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
-            $.ajax({
-                url: 'api/confirm_student.php',
-                type: 'POST',
-                data: { admission_id: admissionId },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.status === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Confirmed!',
-                            text: 'Student has been confirmed successfully.',
-                            showConfirmButton: true,
-                            confirmButtonText: 'Add Complete Details'
-                        }).then((result) => {
-                            if (result.isConfirmed && response.action === 'prompt_details') {
-                                // Open student details modal for the confirmed student
-                                openStudentDetailsModal(response.new_sid);
-                            }
-                        });
-                        loadAdmissionsList();
-                        loadStudentsList();
-                        loadDashboardStats();
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: response.message || 'Failed to confirm student'
-                        });
-                    }
-                },
-                error: function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Something went wrong. Please try again!'
-                    });
+            $.post('api/confirm_student.php', { admission_id: admissionId })
+            .done(function(response) {
+                if(response.success) {
+                    Swal.fire('Confirmed!', 'Student has been confirmed', 'success');
+                    loadAdmissions();
+                    loadDashboardStats();
+                } else {
+                    Swal.fire('Error!', response.message, 'error');
                 }
             });
         }
     });
 }
 
-// Reject Admission
 function rejectAdmission(admissionId) {
     Swal.fire({
         title: 'Reject Admission?',
-        text: "This action cannot be undone.",
+        text: 'This action cannot be undone',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Yes, reject!'
+        confirmButtonText: 'Yes, Reject',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#d33'
     }).then((result) => {
         if (result.isConfirmed) {
-            $.ajax({
-                url: 'api/reject_admission.php',
-                type: 'POST',
-                data: { admission_id: admissionId },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.status === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Rejected!',
-                            text: 'Admission has been rejected.'
-                        });
-                        loadAdmissionsList();
-                        loadDashboardStats();
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: response.message || 'Failed to reject admission'
-                        });
-                    }
-                },
-                error: function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Something went wrong. Please try again!'
-                    });
+            $.post('api/reject_admission.php', { admission_id: admissionId })
+            .done(function(response) {
+                if(response.success) {
+                    Swal.fire('Rejected!', 'Admission has been rejected', 'success');
+                    loadAdmissions();
+                    loadDashboardStats();
+                } else {
+                    Swal.fire('Error!', response.message, 'error');
                 }
             });
         }
     });
 }
 
-// Load Reports
-function loadReports() {
-    // Implementation for reports functionality
-    console.log('Loading reports...');
+function viewStudentProfile(sid) {
+    // Load student profile data and show modal
+    $.get(`api/get_students.php?sid=${sid}`)
+    .done(function(response) {
+        if(response.success && response.data.length > 0) {
+            const student = response.data[0];
+            showStudentProfileModal(student);
+        } else {
+            Swal.fire('Error!', 'Student profile not found', 'error');
+        }
+    });
 }
 
-// Logout Function
+function showStudentProfileModal(student) {
+    const profileContent = `
+        <div class="profile-section">
+            <h4><i class="fas fa-user"></i> Personal Information</h4>
+            <div class="profile-grid">
+                <div class="profile-item"><strong>Student ID:</strong> ${student.sid}</div>
+                <div class="profile-item"><strong>Name:</strong> ${student.fname} ${student.lname || ''}</div>
+                <div class="profile-item"><strong>Mobile:</strong> ${student.mobile || 'Not provided'}</div>
+                <div class="profile-item"><strong>Email:</strong> ${student.email || 'Not provided'}</div>
+                <div class="profile-item"><strong>Programme:</strong> ${student.programme}</div>
+                <div class="profile-item"><strong>Department:</strong> ${student.department}</div>
+            </div>
+        </div>
+    `;
+    
+    $('#studentProfileContent').html(profileContent);
+    $('#studentProfileModal').addClass('active');
+}
+
+function closeStudentProfileModal() {
+    $('#studentProfileModal').removeClass('active');
+}
+
+function editStudentDetails(sid) {
+    // Load admission data for editing
+    $.get(`api/get_admissions.php?sid=${sid}`)
+    .done(function(response) {
+        if(response.success && response.data.length > 0) {
+            const admission = response.data[0];
+            showStudentDetailsModal(admission);
+        } else {
+            Swal.fire('Error!', 'Admission record not found', 'error');
+        }
+    });
+}
+
+function showStudentDetailsModal(admission) {
+    // Populate the form with admission data
+    $('#student_admission_id').val(admission.id);
+    $('#student_sid').val(admission.sid);
+    $('#student_fname').val(admission.fname);
+    $('#student_lname').val(admission.lname || '');
+    
+    // Show the modal
+    $('#studentDetailsModal').addClass('active');
+}
+
+function closeStudentDetailsModal() {
+    $('#studentDetailsModal').removeClass('active');
+}
+
+function saveStudentDetails() {
+    const formData = new FormData($('#studentDetailsForm')[0]);
+    
+    $.ajax({
+        url: 'api/update_student_details.php',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if(response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Student details updated successfully',
+                    timer: 2000
+                });
+                closeStudentDetailsModal();
+                loadStudents();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response.message || 'Failed to update details'
+                });
+            }
+        },
+        error: function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error occurred'
+            });
+        }
+    });
+}
+
+function switchTab(tabId) {
+    // Hide all tabs
+    $('.tab-content').removeClass('active');
+    
+    // Show selected tab
+    $(`#${tabId}`).addClass('active');
+    
+    // Load tab-specific data
+    if(tabId === 'admissions-tab') {
+        loadAdmissions();
+    } else if(tabId === 'students-tab') {
+        loadStudents();
+    } else if(tabId === 'dashboard-tab') {
+        loadDashboardStats();
+    } else if(tabId === 'reports-tab') {
+        loadReportsData();
+    }
+}
+
+function loadReportsData() {
+    // Load analytics data for reports
+    $.get('api/get_dashboard_stats.php')
+    .done(function(response) {
+        if(response.success) {
+            updateReportsDisplay(response.data);
+        }
+    });
+}
+
+function updateReportsDisplay(data) {
+    $('#reportTotalApplications').text(data.total_applications || 0);
+    $('#reportConfirmedStudents').text(data.confirmed_students || 0);
+    
+    // Calculate rejection rate
+    const rejectionRate = data.total_applications > 0 ? 
+        Math.round(((data.total_applications - data.confirmed_students) / data.total_applications) * 100) : 0;
+    $('#reportRejectionRate').text(rejectionRate + '%');
+    
+    // Update department stats
+    const deptStats = $('#departmentStats');
+    deptStats.empty();
+    
+    if(data.departments && data.departments.length > 0) {
+        $('#reportPopularDept').text(data.departments[0].department);
+        
+        data.departments.forEach(function(dept) {
+            const deptItem = `
+                <div class="dept-stat-item">
+                    <span class="dept-name">${dept.department}:</span>
+                    <span class="dept-count">${dept.count}</span>
+                </div>
+            `;
+            deptStats.append(deptItem);
+        });
+    }
+}
+
+function handleQuickAction(action) {
+    switch(action) {
+        case 'new-admission':
+            switchTab('new-admission-tab');
+            $('.nav-link[data-tab="new-admission-tab"]').closest('.nav-item').addClass('active').siblings().removeClass('active');
+            break;
+        case 'confirmed-students':
+            switchTab('students-tab');
+            $('.nav-link[data-tab="students-tab"]').closest('.nav-item').addClass('active').siblings().removeClass('active');
+            break;
+        case 'export-data':
+            exportData('all');
+            break;
+        case 'system-settings':
+            Swal.fire('Info', 'Settings panel coming soon!', 'info');
+            break;
+    }
+}
+
+function exportData(type) {
+    window.open(`api/export_data.php?type=${type}`, '_blank');
+}
+
+function generateReport() {
+    const period = $('#reportPeriod').val();
+    // Implementation for generating custom reports
+    Swal.fire('Success!', `Report for ${period} generated`, 'success');
+}
+
+function generatePDFReport() {
+    Swal.fire('Info', 'PDF Report generation coming soon!', 'info');
+}
+
+function refreshAdmissions() {
+    loadAdmissions();
+    Swal.fire({
+        icon: 'success',
+        title: 'Refreshed!',
+        text: 'Admissions data updated',
+        timer: 1500,
+        showConfirmButton: false
+    });
+}
+
+function refreshStudents() {
+    loadStudents();
+    Swal.fire({
+        icon: 'success',
+        title: 'Refreshed!',
+        text: 'Students data updated',
+        timer: 1500,
+        showConfirmButton: false
+    });
+}
+
+function resetAdmissionForm() {
+    $('#admissionForm')[0].reset();
+    Swal.fire({
+        icon: 'info',
+        title: 'Form Reset',
+        text: 'All fields have been cleared',
+        timer: 1500,
+        showConfirmButton: false
+    });
+}
+
+// Utility functions
+function toggleSidebar() {
+    $('.dashboard-layout').toggleClass('sidebar-collapsed');
+}
+
 function confirmLogout() {
     Swal.fire({
-        title: 'Are you sure?',
-        text: "You will be logged out of the system",
-        icon: 'warning',
+        title: 'Logout?',
+        text: 'Are you sure you want to logout?',
+        icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, logout!'
+        confirmButtonText: 'Yes, Logout',
+        cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
             window.location.href = 'logout.php';
@@ -946,107 +540,26 @@ function confirmLogout() {
     });
 }
 
-// Utility Functions
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
+function showNotifications() {
+    Swal.fire({
+        title: 'Notifications',
+        html: '<div class="notification-list">No new notifications</div>',
+        icon: 'info'
+    });
+}
+
+function toggleUserDropdown() {
+    // Implementation for user dropdown
+    console.log('User dropdown toggled');
+}
+
+function formatDateTime(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB');
-}
-
-function generateSID(programme, department, batch) {
-    // Generate SID based on pattern: YearProgrammeDeptSequence
-    // Example: 26MKCEAL001 (2026 + MKCE + AL + 001)
-    const year = batch.substring(2, 4); // Get last 2 digits of year
-    const progCode = programme.substring(0, 4).toUpperCase();
-    const deptCode = getDepartmentCode(department);
+    const now = new Date();
+    const diff = now - date;
     
-    // This would need to be generated server-side with proper sequence
-    return `${year}${progCode}${deptCode}XXX`;
+    if(diff < 60000) return 'Just now';
+    if(diff < 3600000) return Math.floor(diff / 60000) + ' minutes ago';
+    if(diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago';
+    return Math.floor(diff / 86400000) + ' days ago';
 }
-
-function getDepartmentCode(department) {
-    const codes = {
-        'Computer Science and Engineering': 'CS',
-        'Electronics and Communication Engineering': 'EC',
-        'Electrical and Electronics Engineering': 'EE',
-        'Mechanical Engineering': 'ME',
-        'Civil Engineering': 'CE',
-        'Information Technology': 'IT',
-        'Artificial Intelligence and Data Science': 'AD',
-        'Computer Science and Business Systems': 'CB',
-        'Artificial Intelligence and Machine Learning': 'AL'
-    };
-    return codes[department] || 'XX';
-}
-
-// Auto-fill SID when programme, department, and batch are selected
-$(document).on('change', '#programme, #department, #batch', function() {
-    const programme = $('#programme').val();
-    const department = $('#department').val();
-    const batch = $('#batch').val();
-    
-    if (programme && department && batch) {
-        // This should call server-side function to generate proper SID
-        const suggestedSID = generateSID(programme, department, batch);
-        $('#sid').attr('placeholder', `Suggested: ${suggestedSID}`);
-    }
-});
-
-// Initialize Search and Filters
-function initializeSearchAndFilters() {
-    // Student search functionality
-    $('#studentSearch').on('keyup', function() {
-        filterStudents();
-    });
-    
-    $('#departmentFilter, #batchFilter').on('change', function() {
-        filterStudents();
-    });
-}
-
-// Filter Students
-function filterStudents() {
-    const searchTerm = $('#studentSearch').val().toLowerCase();
-    const departmentFilter = $('#departmentFilter').val();
-    const batchFilter = $('#batchFilter').val();
-    
-    $('#studentsTableBody tr').each(function() {
-        const row = $(this);
-        const text = row.text().toLowerCase();
-        const department = row.find('td:nth-child(4)').text();
-        const batch = row.find('td:nth-child(5)').text();
-        
-        let showRow = true;
-        
-        // Search filter
-        if (searchTerm && !text.includes(searchTerm)) {
-            showRow = false;
-        }
-        
-        // Department filter
-        if (departmentFilter && department !== departmentFilter) {
-            showRow = false;
-        }
-        
-        // Batch filter
-        if (batchFilter && batch !== batchFilter) {
-            showRow = false;
-        }
-        
-        row.toggle(showRow);
-    });
-}
-
-// Close modal when clicking outside
-$(document).on('click', '.modal', function(e) {
-    if (e.target === this) {
-        closeStudentModal();
-    }
-});
-
-// Close modal with Escape key
-$(document).on('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeStudentModal();
-    }
-});
