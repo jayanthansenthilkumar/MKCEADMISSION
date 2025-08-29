@@ -64,6 +64,41 @@ function initializeLogin() {
 
 // Dashboard Functions
 function initializeDashboard() {
+    // Set current date
+    const now = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+    if ($('.welcome-date').length) {
+        $('.welcome-date').text(now.toLocaleDateString('en-US', options));
+    }
+    
+    // Initialize sidebar navigation
+    initializeSidebarNavigation();
+    
+    // Initialize sidebar toggle
+    $('.sidebar-toggle, .menu-toggle').click(function() {
+        $('.sidebar').toggleClass('collapsed');
+    });
+    
+    // Mobile sidebar toggle
+    $('.menu-toggle').click(function() {
+        $('.sidebar').toggleClass('open');
+    });
+    
+    // Close sidebar on mobile when clicking outside
+    $(document).click(function(e) {
+        if ($(window).width() <= 768) {
+            if (!$(e.target).closest('.sidebar, .menu-toggle').length) {
+                $('.sidebar').removeClass('open');
+            }
+        }
+    });
+    
+    // Initialize existing functionality
     initializeTabs();
     loadDashboardStats();
     initializeAdmissionForm();
@@ -73,32 +108,83 @@ function initializeDashboard() {
     initializeSearchAndFilters();
 }
 
+// Initialize Sidebar Navigation
+function initializeSidebarNavigation() {
+    $('.nav-link').click(function(e) {
+        e.preventDefault();
+        
+        // Remove active class from all nav items
+        $('.nav-item').removeClass('active');
+        
+        // Add active class to clicked item
+        $(this).parent('.nav-item').addClass('active');
+        
+        // Get target tab
+        var target = $(this).data('tab');
+        
+        // Show target content
+        if (target) {
+            switchTab(target);
+        }
+    });
+    
+    // Quick action card clicks
+    $('.action-card').click(function() {
+        var action = $(this).data('action');
+        switch(action) {
+            case 'new-admission':
+                switchTab('admissions-tab');
+                break;
+            case 'confirmed-students':
+                switchTab('students-tab');
+                break;
+            case 'export-data':
+                showExportOptions();
+                break;
+            case 'system-settings':
+                showSettings();
+                break;
+        }
+    });
+}
+
 // Tab Management
 function initializeTabs() {
     $('.nav-tab').on('click', function() {
         const targetTab = $(this).data('tab');
-        
-        // Update active tab
-        $('.nav-tab').removeClass('active');
-        $(this).addClass('active');
-        
-        // Show target content
-        $('.tab-content').removeClass('active');
-        $('#' + targetTab).addClass('active');
-        
-        // Load specific content based on tab
-        switch(targetTab) {
-            case 'admissions-tab':
-                loadAdmissionsList();
-                break;
-            case 'students-tab':
-                loadStudentsList();
-                break;
-            case 'reports-tab':
-                loadReports();
-                break;
-        }
+        switchTab(targetTab);
     });
+}
+
+// Switch Tab Function
+function switchTab(targetTab) {
+    // Update active tab (both sidebar and horizontal tabs)
+    $('.nav-tab, .nav-link').removeClass('active');
+    $('.nav-item').removeClass('active');
+    
+    // Set active states
+    $('[data-tab="' + targetTab + '"]').addClass('active');
+    $('[data-tab="' + targetTab + '"]').parent('.nav-item').addClass('active');
+    
+    // Show target content
+    $('.tab-content').removeClass('active');
+    $('#' + targetTab).addClass('active');
+    
+    // Load specific content based on tab
+    switch(targetTab) {
+        case 'dashboard-tab':
+            loadDashboardStats();
+            break;
+        case 'admissions-tab':
+            loadAdmissionsList();
+            break;
+        case 'students-tab':
+            loadStudentsList();
+            break;
+        case 'reports-tab':
+            loadReports();
+            break;
+    }
 }
 
 // Load Dashboard Statistics
@@ -108,16 +194,90 @@ function loadDashboardStats() {
         type: 'GET',
         dataType: 'json',
         success: function(response) {
-            if (response.status === 'success') {
-                $('.stat-card.admissions .stat-number').text(response.data.total_admissions || 0);
-                $('.stat-card.pending .stat-number').text(response.data.pending || 0);
-                $('.stat-card.confirmed .stat-number').text(response.data.confirmed || 0);
-                $('.stat-card.rejected .stat-number').text(response.data.rejected || 0);
+            if (response.success) {
+                // Animate counters
+                $('.stat-value').each(function() {
+                    var statType = $(this).data('stat');
+                    if (response.data[statType] !== undefined) {
+                        animateCounter($(this), response.data[statType]);
+                    }
+                });
+                
+                // Update existing stat displays
+                $('#totalApplications').text(response.data.total_applications || 0);
+                $('#pendingReview').text(response.data.pending_review || 0);
+                $('#confirmedStudents').text(response.data.confirmed_students || 0);
+                $('#totalStudents').text(response.data.total_students || 0);
             }
         },
         error: function() {
-            console.log('Error loading dashboard stats');
+            console.log('Error loading dashboard statistics');
         }
+    });
+}
+
+// Animate counter numbers
+function animateCounter($element, targetValue) {
+    var currentValue = 0;
+    var increment = targetValue / 50;
+    var timer = setInterval(function() {
+        currentValue += increment;
+        if (currentValue >= targetValue) {
+            currentValue = targetValue;
+            clearInterval(timer);
+        }
+        $element.text(Math.floor(currentValue));
+    }, 20);
+}
+
+// Show Export Options
+function showExportOptions() {
+    Swal.fire({
+        title: 'Export Data',
+        html: `
+            <div style="text-align: left;">
+                <p>Choose what data to export:</p>
+                <div style="margin: 15px 0;">
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="radio" name="exportType" value="admissions" checked> 
+                        <span style="margin-left: 8px;">Admission Applications</span>
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="radio" name="exportType" value="students"> 
+                        <span style="margin-left: 8px;">Confirmed Students</span>
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="radio" name="exportType" value="all"> 
+                        <span style="margin-left: 8px;">All Data</span>
+                    </label>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Export',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const exportType = $('input[name="exportType"]:checked').val();
+            exportData(exportType);
+        }
+    });
+}
+
+// Show Settings
+function showSettings() {
+    Swal.fire({
+        title: 'System Settings',
+        html: `
+            <div style="text-align: left;">
+                <p>System settings and configuration options will be available here.</p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <strong>Current Status:</strong><br>
+                    <small style="color: #666;">System is running normally</small>
+                </div>
+            </div>
+        `,
+        confirmButtonText: 'Close'
     });
 }
 
@@ -394,11 +554,189 @@ function editStudentDetails(sid) {
 
 // View Student Profile
 function viewStudentProfile(sid) {
-    // Implementation for viewing complete student profile
+    $.ajax({
+        url: 'api/get_student_details.php',
+        type: 'GET',
+        data: { sid: sid },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const student = response.data;
+                showStudentProfileModal(student);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response.message || 'Failed to load student profile'
+                });
+            }
+        },
+        error: function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Failed to load student profile'
+            });
+        }
+    });
+}
+
+// Show Student Profile Modal
+function showStudentProfileModal(student) {
+    const profileHtml = `
+        <div class="student-profile">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <div class="avatar-placeholder">${(student.fname || '').charAt(0)}${(student.lname || '').charAt(0)}</div>
+                </div>
+                <div class="profile-info">
+                    <h2>${student.fname || ''} ${student.lname || ''}</h2>
+                    <p class="student-id">Student ID: ${student.sid}</p>
+                    <p class="department">${student.department || 'N/A'} - ${student.batch || 'N/A'}</p>
+                </div>
+            </div>
+            
+            <div class="profile-content">
+                <div class="profile-section">
+                    <h3><i class="icon-user"></i> Personal Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Full Name:</label>
+                            <span>${student.fname || ''} ${student.lname || ''}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Gender:</label>
+                            <span>${student.gender || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Date of Birth:</label>
+                            <span>${student.dob ? formatDate(student.dob) : 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Blood Group:</label>
+                            <span>${student.blood || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Religion:</label>
+                            <span>${student.religion || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Nationality:</label>
+                            <span>${student.nationality || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3><i class="icon-phone"></i> Contact Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Mobile:</label>
+                            <span>${student.mobile || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Parent Mobile:</label>
+                            <span>${student.pmobile || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Email:</label>
+                            <span>${student.email || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Official Email:</label>
+                            <span>${student.offemail || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3><i class="icon-book"></i> Academic Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Programme:</label>
+                            <span>${student.programme || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Department:</label>
+                            <span>${student.department || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Batch:</label>
+                            <span>${student.batch || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Cutoff Mark:</label>
+                            <span>${student.cutoff || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>First Graduate:</label>
+                            <span>${student.firstgra || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Languages:</label>
+                            <span>${student.languages || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3><i class="icon-home"></i> Address & Accommodation</h3>
+                    <div class="info-grid">
+                        <div class="info-item full-width">
+                            <label>Permanent Address:</label>
+                            <span>${student.paddress || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>City:</label>
+                            <span>${student.city || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>State:</label>
+                            <span>${student.state || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Accommodation:</label>
+                            <span>${student.hosday || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Hostel/Room:</label>
+                            <span>${student.hosname || 'N/A'} - ${student.room || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${student.guarname ? `
+                <div class="profile-section">
+                    <h3><i class="icon-users"></i> Guardian Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Guardian Name:</label>
+                            <span>${student.guarname}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Guardian Mobile:</label>
+                            <span>${student.guarmobile || 'N/A'}</span>
+                        </div>
+                        <div class="info-item full-width">
+                            <label>Guardian Address:</label>
+                            <span>${student.guaraddress || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+
     Swal.fire({
         title: 'Student Profile',
-        text: `Opening profile for student ${sid}`,
-        icon: 'info'
+        html: profileHtml,
+        width: '900px',
+        showCloseButton: true,
+        showConfirmButton: false,
+        customClass: {
+            popup: 'student-profile-modal'
+        }
     });
 }
 

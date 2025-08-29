@@ -20,58 +20,262 @@ $faculty_info = $faculty_result->fetch_assoc();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admission Portal - MKCE</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>MKCE Admission Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-<div class="dashboard-container">
-    <div class="header">
-        <div>
-            <h1>MKCE Admission Portal</h1>
-            <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">
-                Welcome, <?php echo $faculty_info['name']; ?> - <?php echo $faculty_info['dept']; ?>
-            </p>
-        </div>
-        <div class="header-actions">
-            <div class="user-info">
-                <?php echo $display_name; ?>
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>MKCE</span>
             </div>
-            <button class="logout-btn" onclick="confirmLogout()">Logout</button>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
-    </div>
+        
+        <nav class="sidebar-nav">
+            <ul class="nav-menu">
+                <li class="nav-item active" data-tab="dashboard-tab">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="new-admission-tab">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-user-plus"></i>
+                        <span>New Admission</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="admissions-tab">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Manage Admissions</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="students-tab">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-users"></i>
+                        <span>Students Database</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="reports-tab">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Reports & Analytics</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-info">
+                    <div class="user-name"><?php echo $faculty_info['name']; ?></div>
+                    <div class="user-role"><?php echo $faculty_info['dept']; ?></div>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="confirmLogout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </aside>
 
-    <!-- Statistics Cards -->
-    <div class="stats-grid">
-        <div class="stat-card admissions">
-            <div class="stat-number">0</div>
-            <div class="stat-label">Total Admissions</div>
-        </div>
-        <div class="stat-card pending">
-            <div class="stat-number">0</div>
-            <div class="stat-label">Pending Review</div>
-        </div>
-        <div class="stat-card confirmed">
-            <div class="stat-number">0</div>
-            <div class="stat-label">Confirmed Students</div>
-        </div>
-        <div class="stat-card rejected">
-            <div class="stat-number">0</div>
-            <div class="stat-label">Rejected</div>
-        </div>
-    </div>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>Admission Management System</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="notification-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <div class="user-dropdown">
+                        <button class="user-btn">
+                            <div class="user-avatar-small">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span><?php echo $display_name; ?></span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-    <!-- Navigation Tabs -->
-    <div class="nav-tabs">
-        <button class="nav-tab active" data-tab="new-admission-tab">New Admission</button>
-        <button class="nav-tab" data-tab="admissions-tab">Manage Admissions</button>
-        <button class="nav-tab" data-tab="students-tab">Students List</button>
-        <button class="nav-tab" data-tab="reports-tab">Reports</button>
-    </div>
+        <!-- Dashboard Content -->
+        <div class="content-area">
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="tab-content active">
+                <!-- Welcome Card -->
+                <div class="welcome-card">
+                    <div class="welcome-content">
+                        <div class="welcome-text">
+                            <h2>Welcome back, <?php echo $faculty_info['name']; ?>!</h2>
+                            <p>Here's what's happening with admissions today</p>
+                            <div class="welcome-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span><?php echo date('l, F d, Y'); ?></span>
+                            </div>
+                        </div>
+                        <div class="welcome-illustration">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Tab Contents -->
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card admissions">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Total Admissions</div>
+                        </div>
+                        <div class="stat-trend">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+12%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card pending">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Pending Review</div>
+                        </div>
+                        <div class="stat-trend">
+                            <i class="fas fa-arrow-down"></i>
+                            <span>-5%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card confirmed">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Confirmed Students</div>
+                        </div>
+                        <div class="stat-trend">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+8%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card rejected">
+                        <div class="stat-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Rejected</div>
+                        </div>
+                        <div class="stat-trend">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+2%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <div class="action-cards">
+                        <div class="action-card" onclick="switchTab('new-admission-tab')">
+                            <div class="action-icon">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="action-text">
+                                <h4>Add New Admission</h4>
+                                <p>Register a new student admission</p>
+                            </div>
+                        </div>
+                        <div class="action-card" onclick="switchTab('admissions-tab')">
+                            <div class="action-icon">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div class="action-text">
+                                <h4>Review Admissions</h4>
+                                <p>Approve or reject pending admissions</p>
+                            </div>
+                        </div>
+                        <div class="action-card" onclick="switchTab('students-tab')">
+                            <div class="action-icon">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <div class="action-text">
+                                <h4>Student Database</h4>
+                                <p>View and manage confirmed students</p>
+                            </div>
+                        </div>
+                        <div class="action-card" onclick="exportStudentsData()">
+                            <div class="action-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="action-text">
+                                <h4>Export Data</h4>
+                                <p>Download student records</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon confirmed">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p><strong>Student Confirmed:</strong> John Doe (26MKCECS001) has been confirmed</p>
+                                <span class="activity-time">2 minutes ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon pending">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p><strong>New Admission:</strong> Jane Smith applied for Computer Science</p>
+                                <span class="activity-time">15 minutes ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon rejected">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p><strong>Admission Rejected:</strong> Application for Mechanical Engineering</p>
+                                <span class="activity-time">1 hour ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
     
     <!-- New Admission Tab -->
     <div id="new-admission-tab" class="tab-content active">
@@ -297,6 +501,9 @@ $faculty_info = $faculty_result->fetch_assoc();
             <p class="text-center">Reports functionality will be implemented here.</p>
         </div>
     </div>
+
+        </div>
+    </main>
 </div>
 
 <!-- Student Details Modal -->
