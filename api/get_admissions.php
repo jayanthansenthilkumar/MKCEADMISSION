@@ -9,10 +9,11 @@ if(!isset($_SESSION['id'])){
 
 include '../config.php';
 
-// Get all admission records
+// Get admission records that are not confirmed (only show ADMITTED, PENDING, REJECTED)
 $sql = "SELECT a.*, ay.ayear 
         FROM admission a 
         LEFT JOIN ayear ay ON a.ayear_id = ay.id 
+        WHERE a.status != 'CONFIRMED'
         ORDER BY a.created_at DESC";
 
 $result = $conn->query($sql);

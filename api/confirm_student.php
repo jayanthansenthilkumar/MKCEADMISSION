@@ -45,7 +45,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admission_id'])) {
         echo json_encode([
             'status' => 'success', 
             'message' => 'Student confirmed successfully',
-            'new_sid' => $new_sid
+            'new_sid' => $new_sid,
+            'action' => 'prompt_details'
         ]);
         
     } catch (Exception $e) {

@@ -228,9 +228,45 @@ $faculty_info = $faculty_result->fetch_assoc();
     <!-- Students List Tab -->
     <div id="students-tab" class="tab-content">
         <div class="card">
-            <h3>Confirmed Students</h3>
+            <div class="card-header">
+                <h3>Confirmed Students Database</h3>
+                <div class="card-actions">
+                    <button class="btn btn-primary" onclick="openStudentDetailsModal()">
+                        <i class="icon-plus"></i> Add Student Details
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportStudentsData()">
+                        <i class="icon-download"></i> Export Data
+                    </button>
+                </div>
+            </div>
+            <div class="search-filter-container">
+                <div class="search-box">
+                    <input type="text" id="studentSearch" placeholder="Search students...">
+                </div>
+                <div class="filter-controls">
+                    <select id="departmentFilter">
+                        <option value="">All Departments</option>
+                        <option value="Computer Science and Engineering">CSE</option>
+                        <option value="Electronics and Communication Engineering">ECE</option>
+                        <option value="Electrical and Electronics Engineering">EEE</option>
+                        <option value="Mechanical Engineering">ME</option>
+                        <option value="Civil Engineering">CE</option>
+                        <option value="Information Technology">IT</option>
+                        <option value="Artificial Intelligence and Data Science">AIDS</option>
+                        <option value="Computer Science and Business Systems">CSBS</option>
+                        <option value="Artificial Intelligence and Machine Learning">AIML</option>
+                    </select>
+                    <select id="batchFilter">
+                        <option value="">All Batches</option>
+                        <option value="2024-2028">2024-2028</option>
+                        <option value="2025-2029">2025-2029</option>
+                        <option value="2026-2030">2026-2030</option>
+                        <option value="2027-2031">2027-2031</option>
+                    </select>
+                </div>
+            </div>
             <div class="table-container">
-                <table>
+                <table class="students-table">
                     <thead>
                         <tr>
                             <th>Student ID</th>
@@ -240,11 +276,13 @@ $faculty_info = $faculty_result->fetch_assoc();
                             <th>Batch</th>
                             <th>Mobile</th>
                             <th>Email</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="studentsTableBody">
                         <tr>
-                            <td colspan="7" class="text-center">Loading...</td>
+                            <td colspan="9" class="text-center">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -257,6 +295,278 @@ $faculty_info = $faculty_result->fetch_assoc();
         <div class="card">
             <h3>Reports & Analytics</h3>
             <p class="text-center">Reports functionality will be implemented here.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Student Details Modal -->
+<div id="studentDetailsModal" class="modal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h3>Complete Student Information</h3>
+            <span class="close" onclick="closeStudentModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="studentDetailsForm">
+                <input type="hidden" id="student_sid" name="sid">
+                
+                <!-- Personal Information Section -->
+                <div class="form-section">
+                    <h4>Personal Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modal_fname">First Name *</label>
+                            <input type="text" id="modal_fname" name="fname" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="modal_lname">Last Name</label>
+                            <input type="text" id="modal_lname" name="lname">
+                        </div>
+                        <div class="form-group">
+                            <label for="modal_gender">Gender *</label>
+                            <select id="modal_gender" name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">Date of Birth</label>
+                            <input type="date" id="dob" name="dob">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="blood">Blood Group</label>
+                            <select id="blood" name="blood">
+                                <option value="">Select Blood Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="religion">Religion</label>
+                            <input type="text" id="religion" name="religion">
+                        </div>
+                        <div class="form-group">
+                            <label for="caste">Caste</label>
+                            <input type="text" id="caste" name="caste">
+                        </div>
+                        <div class="form-group">
+                            <label for="nationality">Nationality</label>
+                            <input type="text" id="nationality" name="nationality" value="Indian">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information Section -->
+                <div class="form-section">
+                    <h4>Contact Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mobile">Mobile Number *</label>
+                            <input type="tel" id="mobile" name="mobile" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pmobile">Parent Mobile</label>
+                            <input type="tel" id="pmobile" name="pmobile">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="offemail">Official Email</label>
+                            <input type="email" id="offemail" name="offemail">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address Information Section -->
+                <div class="form-section">
+                    <h4>Address Information</h4>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="paddress">Permanent Address</label>
+                            <textarea id="paddress" name="paddress" rows="3"></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="taddress">Temporary Address</label>
+                            <textarea id="taddress" name="taddress" rows="3"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" name="city">
+                        </div>
+                        <div class="form-group">
+                            <label for="state">State</label>
+                            <input type="text" id="state" name="state">
+                        </div>
+                        <div class="form-group">
+                            <label for="zip">ZIP Code</label>
+                            <input type="text" id="zip" name="zip">
+                        </div>
+                        <div class="form-group">
+                            <label for="country">Country</label>
+                            <input type="text" id="country" name="country" value="India">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Information Section -->
+                <div class="form-section">
+                    <h4>Academic Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modal_programme">Programme</label>
+                            <input type="text" id="modal_programme" name="programme" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="modal_department">Department</label>
+                            <input type="text" id="modal_department" name="department" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="modal_batch">Batch</label>
+                            <input type="text" id="modal_batch" name="batch" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="cutoff">Cutoff Mark</label>
+                            <input type="number" id="cutoff" name="cutoff" min="0" max="200" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstgra">First Graduate</label>
+                            <select id="firstgra" name="firstgra">
+                                <option value="">Select</option>
+                                <option value="YES">Yes</option>
+                                <option value="NO">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="exam_status">Exam Status</label>
+                            <input type="text" id="exam_status" name="exam_status">
+                        </div>
+                        <div class="form-group">
+                            <label for="exam_mark">Exam Mark</label>
+                            <input type="text" id="exam_mark" name="exam_mark">
+                        </div>
+                        <div class="form-group">
+                            <label for="languages">Languages Known</label>
+                            <input type="text" id="languages" name="languages" placeholder="e.g., Tamil, English, Hindi">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hostel Information Section -->
+                <div class="form-section">
+                    <h4>Accommodation Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hosday">Accommodation Type</label>
+                            <select id="hosday" name="hosday">
+                                <option value="">Select Type</option>
+                                <option value="Hosteller">Hosteller</option>
+                                <option value="Dayscholar">Day Scholar</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="hosname">Hostel Name</label>
+                            <input type="text" id="hosname" name="hosname">
+                        </div>
+                        <div class="form-group">
+                            <label for="room">Room Number</label>
+                            <input type="text" id="room" name="room">
+                        </div>
+                        <div class="form-group">
+                            <label for="busno">Bus Number</label>
+                            <input type="number" id="busno" name="busno">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guardian Information Section -->
+                <div class="form-section">
+                    <h4>Guardian Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="guarname">Guardian Name</label>
+                            <input type="text" id="guarname" name="guarname">
+                        </div>
+                        <div class="form-group">
+                            <label for="guarmobile">Guardian Mobile</label>
+                            <input type="tel" id="guarmobile" name="guarmobile">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="guaraddress">Guardian Address</label>
+                            <textarea id="guaraddress" name="guaraddress" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Section -->
+                <div class="form-section">
+                    <h4>Identity Documents</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aadhar">Aadhar Number</label>
+                            <input type="text" id="aadhar" name="aadhar" maxlength="12">
+                        </div>
+                        <div class="form-group">
+                            <label for="pan">PAN Number</label>
+                            <input type="text" id="pan" name="pan" maxlength="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="saadhar">Student Aadhar</label>
+                            <input type="text" id="saadhar" name="saadhar" maxlength="12">
+                        </div>
+                        <div class="form-group">
+                            <label for="span">Student PAN</label>
+                            <input type="text" id="span" name="span" maxlength="10">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SWOT Analysis Section -->
+                <div class="form-section">
+                    <h4>SWOT Analysis</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="Strengths">Strengths</label>
+                            <textarea id="Strengths" name="Strengths" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="Weaknesses">Weaknesses</label>
+                            <textarea id="Weaknesses" name="Weaknesses" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="Opportunities">Opportunities</label>
+                            <textarea id="Opportunities" name="Opportunities" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="Threats">Threats</label>
+                            <textarea id="Threats" name="Threats" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeStudentModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Student Details</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

@@ -67,8 +67,10 @@ function initializeDashboard() {
     initializeTabs();
     loadDashboardStats();
     initializeAdmissionForm();
+    initializeStudentDetailsForm();
     loadAdmissionsList();
     loadStudentsList();
+    initializeSearchAndFilters();
 }
 
 // Tab Management
@@ -244,24 +246,243 @@ function displayStudentsList(students) {
     let html = '';
     
     if (students.length === 0) {
-        html = '<tr><td colspan="7" class="text-center">No student records found</td></tr>';
+        html = '<tr><td colspan="9" class="text-center">No student records found</td></tr>';
     } else {
         students.forEach(function(student) {
+            const status = student.mobile && student.email ? 'Complete' : 'Incomplete';
+            const statusClass = status === 'Complete' ? 'status-confirmed' : 'status-pending';
+            
             html += `
                 <tr>
-                    <td>${student.sid}</td>
+                    <td><strong>${student.sid}</strong></td>
                     <td>${student.fname} ${student.lname || ''}</td>
-                    <td>${student.programme}</td>
-                    <td>${student.department}</td>
-                    <td>${student.batch}</td>
+                    <td>${student.programme || 'N/A'}</td>
+                    <td>${student.department || 'N/A'}</td>
+                    <td>${student.batch || 'N/A'}</td>
                     <td>${student.mobile || 'N/A'}</td>
                     <td>${student.email || 'N/A'}</td>
+                    <td><span class="status-badge ${statusClass}">${status}</span></td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="editStudentDetails('${student.sid}')">
+                            <i class="icon-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="viewStudentProfile('${student.sid}')">
+                            <i class="icon-eye"></i> View
+                        </button>
+                    </td>
                 </tr>
             `;
         });
     }
     
     $('#studentsTableBody').html(html);
+}
+
+// Open Student Details Modal
+function openStudentDetailsModal(sid = null) {
+    if (sid) {
+        // Load existing student data
+        loadStudentForEdit(sid);
+    } else {
+        // Clear form for new student
+        $('#studentDetailsForm')[0].reset();
+        $('#student_sid').val('');
+    }
+    $('#studentDetailsModal').show();
+}
+
+// Close Student Modal
+function closeStudentModal() {
+    $('#studentDetailsModal').hide();
+    $('#studentDetailsForm')[0].reset();
+}
+
+// Load Student for Editing
+function loadStudentForEdit(sid) {
+    $.ajax({
+        url: 'api/get_student_details.php',
+        type: 'GET',
+        data: { sid: sid },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const student = response.data;
+                
+                // Populate form fields
+                $('#student_sid').val(student.sid);
+                $('#modal_fname').val(student.fname || '');
+                $('#modal_lname').val(student.lname || '');
+                $('#modal_gender').val(student.gender || '');
+                $('#dob').val(student.dob || '');
+                $('#blood').val(student.blood || '');
+                $('#religion').val(student.religion || '');
+                $('#caste').val(student.caste || '');
+                $('#nationality').val(student.nationality || 'Indian');
+                $('#mobile').val(student.mobile || '');
+                $('#pmobile').val(student.pmobile || '');
+                $('#email').val(student.email || '');
+                $('#offemail').val(student.offemail || '');
+                $('#paddress').val(student.paddress || '');
+                $('#taddress').val(student.taddress || '');
+                $('#city').val(student.city || '');
+                $('#state').val(student.state || '');
+                $('#zip').val(student.zip || '');
+                $('#country').val(student.country || 'India');
+                
+                // Academic info (readonly)
+                $('#modal_programme').val(student.programme || '');
+                $('#modal_department').val(student.department || '');
+                $('#modal_batch').val(student.batch || '');
+                $('#cutoff').val(student.cutoff || '');
+                $('#firstgra').val(student.firstgra || '');
+                $('#exam_status').val(student.exam_status || '');
+                $('#exam_mark').val(student.exam_mark || '');
+                $('#languages').val(student.languages || '');
+                
+                // Hostel info
+                $('#hosday').val(student.hosday || '');
+                $('#hosname').val(student.hosname || '');
+                $('#room').val(student.room || '');
+                $('#busno').val(student.busno || '');
+                
+                // Guardian info
+                $('#guarname').val(student.guarname || '');
+                $('#guarmobile').val(student.guarmobile || '');
+                $('#guaraddress').val(student.guaraddress || '');
+                
+                // Documents
+                $('#aadhar').val(student.aadhar || '');
+                $('#pan').val(student.pan || '');
+                $('#saadhar').val(student.saadhar || '');
+                $('#span').val(student.span || '');
+                
+                // SWOT Analysis
+                $('#Strengths').val(student.Strengths || '');
+                $('#Weaknesses').val(student.Weaknesses || '');
+                $('#Opportunities').val(student.Opportunities || '');
+                $('#Threats').val(student.Threats || '');
+                
+                // Store additional data
+                $('#studentDetailsForm').data('admission_id', student.admission_id);
+                $('#studentDetailsForm').data('ayear_id', student.ayear_id);
+                $('#studentDetailsForm').data('doadmission', student.doadmission);
+                $('#studentDetailsForm').data('admcate', student.admcate);
+                $('#studentDetailsForm').data('admtype', student.admtype);
+                
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response.message || 'Failed to load student details'
+                });
+            }
+        },
+        error: function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Failed to load student details'
+            });
+        }
+    });
+}
+
+// Edit Student Details
+function editStudentDetails(sid) {
+    openStudentDetailsModal(sid);
+}
+
+// View Student Profile
+function viewStudentProfile(sid) {
+    // Implementation for viewing complete student profile
+    Swal.fire({
+        title: 'Student Profile',
+        text: `Opening profile for student ${sid}`,
+        icon: 'info'
+    });
+}
+
+// Export Students Data
+function exportStudentsData() {
+    Swal.fire({
+        title: 'Export Data',
+        text: 'This feature will export student data to Excel/CSV format',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Export',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Implementation for data export
+            window.open('api/export_students.php', '_blank');
+        }
+    });
+}
+
+// Initialize Student Details Form
+function initializeStudentDetailsForm() {
+    $('#studentDetailsForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        // Add additional data stored in form
+        const admission_id = $(this).data('admission_id');
+        const ayear_id = $(this).data('ayear_id');
+        const doadmission = $(this).data('doadmission');
+        const admcate = $(this).data('admcate');
+        const admtype = $(this).data('admtype');
+        
+        if (admission_id) formData.append('admission_id', admission_id);
+        if (ayear_id) formData.append('ayear_id', ayear_id);
+        if (doadmission) formData.append('doadmission', doadmission);
+        if (admcate) formData.append('admcate', admcate);
+        if (admtype) formData.append('admtype', admtype);
+        
+        // Show loading
+        Swal.fire({
+            title: 'Saving Student Details...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        $.ajax({
+            url: 'api/save_student_details.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Student details saved successfully'
+                    }).then(() => {
+                        closeStudentModal();
+                        loadStudentsList();
+                        loadDashboardStats();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: response.message || 'Failed to save student details'
+                    });
+                }
+            },
+            error: function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Something went wrong. Please try again!'
+                });
+            }
+        });
+    });
 }
 
 // Confirm Student
@@ -286,7 +507,14 @@ function confirmStudent(admissionId) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Confirmed!',
-                            text: 'Student has been confirmed successfully.'
+                            text: 'Student has been confirmed successfully.',
+                            showConfirmButton: true,
+                            confirmButtonText: 'Add Complete Details'
+                        }).then((result) => {
+                            if (result.isConfirmed && response.action === 'prompt_details') {
+                                // Open student details modal for the confirmed student
+                                openStudentDetailsModal(response.new_sid);
+                            }
                         });
                         loadAdmissionsList();
                         loadStudentsList();
@@ -423,5 +651,64 @@ $(document).on('change', '#programme, #department, #batch', function() {
         // This should call server-side function to generate proper SID
         const suggestedSID = generateSID(programme, department, batch);
         $('#sid').attr('placeholder', `Suggested: ${suggestedSID}`);
+    }
+});
+
+// Initialize Search and Filters
+function initializeSearchAndFilters() {
+    // Student search functionality
+    $('#studentSearch').on('keyup', function() {
+        filterStudents();
+    });
+    
+    $('#departmentFilter, #batchFilter').on('change', function() {
+        filterStudents();
+    });
+}
+
+// Filter Students
+function filterStudents() {
+    const searchTerm = $('#studentSearch').val().toLowerCase();
+    const departmentFilter = $('#departmentFilter').val();
+    const batchFilter = $('#batchFilter').val();
+    
+    $('#studentsTableBody tr').each(function() {
+        const row = $(this);
+        const text = row.text().toLowerCase();
+        const department = row.find('td:nth-child(4)').text();
+        const batch = row.find('td:nth-child(5)').text();
+        
+        let showRow = true;
+        
+        // Search filter
+        if (searchTerm && !text.includes(searchTerm)) {
+            showRow = false;
+        }
+        
+        // Department filter
+        if (departmentFilter && department !== departmentFilter) {
+            showRow = false;
+        }
+        
+        // Batch filter
+        if (batchFilter && batch !== batchFilter) {
+            showRow = false;
+        }
+        
+        row.toggle(showRow);
+    });
+}
+
+// Close modal when clicking outside
+$(document).on('click', '.modal', function(e) {
+    if (e.target === this) {
+        closeStudentModal();
+    }
+});
+
+// Close modal with Escape key
+$(document).on('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeStudentModal();
     }
 });
