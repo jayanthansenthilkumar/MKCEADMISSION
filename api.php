@@ -57,6 +57,9 @@ switch ($action) {
     case 'save_student_details':
         handleSaveStudentDetails($conn);
         break;
+    case 'complete_student_profile':
+        handleCompleteStudentProfile($conn);
+        break;
     case 'get_student_details':
         handleGetStudentDetails($conn);
         break;
@@ -128,6 +131,13 @@ function handleSaveAdmission($conn) {
     $ayear_id = intval($_POST['ayear_id'] ?? 1);
     $admitted_by = $_SESSION['id'];
 
+    // Additional fields for enhanced admission
+    $application_number = 'APP' . date('Y') . sprintf('%06d', rand(1, 999999));
+    $admission_category = $conn->real_escape_string($_POST['admission_category'] ?? 'General');
+    $admission_type = $conn->real_escape_string($_POST['admission_type'] ?? 'Regular');
+    $previous_education = $conn->real_escape_string($_POST['previous_education'] ?? '');
+    $marks_percentage = floatval($_POST['marks_percentage'] ?? 0);
+
     // Check if SID already exists
     $check_sql = "SELECT id FROM admission WHERE sid = '$sid'";
     $check_result = $conn->query($check_sql);
@@ -137,12 +147,26 @@ function handleSaveAdmission($conn) {
         return;
     }
 
-    // Insert admission record
-    $sql = "INSERT INTO admission (sid, fname, lname, dob, gender, mobile, email, programme, department, batch, doadmission, status, ayear_id, admitted_by, created_at) 
-            VALUES ('$sid', '$fname', '$lname', " . ($dob ? "'$dob'" : "NULL") . ", '$gender', '$mobile', '$email', '$programme', '$department', '$batch', '$doadmission', 'pending', $ayear_id, '$admitted_by', NOW())";
+    // Insert admission record with enhanced fields
+    $sql = "INSERT INTO admission (
+                application_number, sid, fname, lname, dob, gender, mobile, email, 
+                programme, department, batch, doadmission, admission_category, admission_type,
+                previous_education, marks_percentage, status, ayear_id, admitted_by, 
+                admission_stage, created_at
+            ) VALUES (
+                '$application_number', '$sid', '$fname', '$lname', " . ($dob ? "'$dob'" : "NULL") . ", 
+                '$gender', '$mobile', '$email', '$programme', '$department', '$batch', 
+                '$doadmission', '$admission_category', '$admission_type', '$previous_education', 
+                $marks_percentage, 'pending', $ayear_id, '$admitted_by', 'application_submitted', NOW()
+            )";
 
     if ($conn->query($sql)) {
-        echo json_encode(['success' => true, 'message' => 'Admission record saved successfully']);
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Admission application submitted successfully',
+            'application_number' => $application_number,
+            'next_stage' => 'pending_review'
+        ]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
     }
@@ -298,10 +322,137 @@ function handleConfirmStudent($conn) {
     $admission_id = intval($_POST['admission_id']);
     $confirmed_by = $_SESSION['id'];
 
-    $sql = "UPDATE admission SET status = 'confirmed', confirmed_by = '$confirmed_by', confirmed_at = NOW() WHERE id = $admission_id";
+    // Update admission status to confirmed and change stage
+    $sql = "UPDATE admission SET 
+                status = 'confirmed', 
+                confirmed_by = '$confirmed_by', 
+                confirmed_at = NOW(),
+                admission_stage = 'confirmed_pending_details'
+            WHERE id = $admission_id";
 
     if ($conn->query($sql)) {
-        echo json_encode(['success' => true, 'message' => 'Student confirmed successfully']);
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Student confirmed successfully. Now collect complete details.',
+            'next_stage' => 'collect_details'
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+    }
+}
+
+// Complete student profile function
+function handleCompleteStudentProfile($conn) {
+    if (!isset($_SESSION['id'])) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+        return;
+    }
+
+    if (!isset($_POST['admission_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Admission ID is required']);
+        return;
+    }
+
+    $admission_id = intval($_POST['admission_id']);
+    
+    // Sanitize all inputs
+    $mobile = $conn->real_escape_string($_POST['mobile'] ?? '');
+    $email = $conn->real_escape_string($_POST['email'] ?? '');
+    $dob = $conn->real_escape_string($_POST['dob'] ?? '');
+    $gender = $conn->real_escape_string($_POST['gender'] ?? '');
+    $blood_group = $conn->real_escape_string($_POST['blood_group'] ?? '');
+    $religion = $conn->real_escape_string($_POST['religion'] ?? '');
+    $caste = $conn->real_escape_string($_POST['caste'] ?? '');
+    $nationality = $conn->real_escape_string($_POST['nationality'] ?? 'Indian');
+    
+    // Address information
+    $address = $conn->real_escape_string($_POST['address'] ?? '');
+    $city = $conn->real_escape_string($_POST['city'] ?? '');
+    $state = $conn->real_escape_string($_POST['state'] ?? '');
+    $pincode = $conn->real_escape_string($_POST['pincode'] ?? '');
+    $country = $conn->real_escape_string($_POST['country'] ?? 'India');
+    
+    // Guardian information
+    $father_name = $conn->real_escape_string($_POST['father_name'] ?? '');
+    $mother_name = $conn->real_escape_string($_POST['mother_name'] ?? '');
+    $guardian_mobile = $conn->real_escape_string($_POST['guardian_mobile'] ?? '');
+    $guardian_email = $conn->real_escape_string($_POST['guardian_email'] ?? '');
+    $guardian_occupation = $conn->real_escape_string($_POST['guardian_occupation'] ?? '');
+    $annual_income = floatval($_POST['annual_income'] ?? 0);
+    
+    // Academic background
+    $tenth_board = $conn->real_escape_string($_POST['tenth_board'] ?? '');
+    $tenth_year = intval($_POST['tenth_year'] ?? 0);
+    $tenth_percentage = floatval($_POST['tenth_percentage'] ?? 0);
+    $twelfth_board = $conn->real_escape_string($_POST['twelfth_board'] ?? '');
+    $twelfth_year = intval($_POST['twelfth_year'] ?? 0);
+    $twelfth_percentage = floatval($_POST['twelfth_percentage'] ?? 0);
+    $entrance_exam = $conn->real_escape_string($_POST['entrance_exam'] ?? '');
+    $entrance_score = floatval($_POST['entrance_score'] ?? 0);
+    
+    // Emergency contact
+    $emergency_contact_name = $conn->real_escape_string($_POST['emergency_contact_name'] ?? '');
+    $emergency_contact_relation = $conn->real_escape_string($_POST['emergency_contact_relation'] ?? '');
+    $emergency_contact_mobile = $conn->real_escape_string($_POST['emergency_contact_mobile'] ?? '');
+    
+    // Medical information
+    $medical_conditions = $conn->real_escape_string($_POST['medical_conditions'] ?? '');
+    $allergies = $conn->real_escape_string($_POST['allergies'] ?? '');
+    
+    // Validate required fields
+    $required_fields = ['mobile', 'email', 'father_name', 'address', 'pincode'];
+    foreach ($required_fields as $field) {
+        if (empty($_POST[$field])) {
+            echo json_encode(['success' => false, 'message' => ucfirst(str_replace('_', ' ', $field)) . ' is required']);
+            return;
+        }
+    }
+
+    // Update admission record with complete information
+    $sql = "UPDATE admission SET 
+                mobile = '$mobile',
+                email = '$email',
+                dob = " . ($dob ? "'$dob'" : "NULL") . ",
+                gender = '$gender',
+                blood_group = '$blood_group',
+                religion = '$religion',
+                caste = '$caste',
+                nationality = '$nationality',
+                address = '$address',
+                city = '$city',
+                state = '$state',
+                pincode = '$pincode',
+                country = '$country',
+                father_name = '$father_name',
+                mother_name = '$mother_name',
+                guardian_mobile = '$guardian_mobile',
+                guardian_email = '$guardian_email',
+                guardian_occupation = '$guardian_occupation',
+                annual_income = $annual_income,
+                tenth_board = '$tenth_board',
+                tenth_year = $tenth_year,
+                tenth_percentage = $tenth_percentage,
+                twelfth_board = '$twelfth_board',
+                twelfth_year = $twelfth_year,
+                twelfth_percentage = $twelfth_percentage,
+                entrance_exam = '$entrance_exam',
+                entrance_score = $entrance_score,
+                emergency_contact_name = '$emergency_contact_name',
+                emergency_contact_relation = '$emergency_contact_relation',
+                emergency_contact_mobile = '$emergency_contact_mobile',
+                medical_conditions = '$medical_conditions',
+                allergies = '$allergies',
+                admission_stage = 'profile_completed',
+                profile_completed_at = NOW(),
+                updated_at = NOW()
+            WHERE id = $admission_id";
+
+    if ($conn->query($sql)) {
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Student profile completed successfully',
+            'stage' => 'profile_completed'
+        ]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
     }

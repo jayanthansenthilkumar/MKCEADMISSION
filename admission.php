@@ -830,6 +830,12 @@ if($ayear_result) {
             border: 1px solid rgba(239, 68, 68, 0.2);
         }
 
+        .status-warning {
+            background: rgba(251, 191, 36, 0.1);
+            color: #d97706;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
         /* Action Buttons */
         .action-buttons {
             display: flex;
@@ -1684,6 +1690,34 @@ if($ayear_result) {
                                                value="<?php echo date('Y-m-d'); ?>">
                                     </div>
                                     <div class="form-group">
+                                        <label for="admission_category">Admission Category</label>
+                                        <select id="admission_category" name="admission_category" class="form-control">
+                                            <option value="General">General</option>
+                                            <option value="OBC">OBC</option>
+                                            <option value="SC">SC</option>
+                                            <option value="ST">ST</option>
+                                            <option value="Management">Management</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admission_type">Admission Type</label>
+                                        <select id="admission_type" name="admission_type" class="form-control">
+                                            <option value="Regular">Regular</option>
+                                            <option value="Lateral Entry">Lateral Entry</option>
+                                            <option value="Transfer">Transfer</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="previous_education">Previous Education</label>
+                                        <input type="text" id="previous_education" name="previous_education" class="form-control" 
+                                               placeholder="e.g., 12th Science, Diploma">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="marks_percentage">Previous Education Marks (%)</label>
+                                        <input type="number" id="marks_percentage" name="marks_percentage" class="form-control" 
+                                               min="0" max="100" step="0.01" placeholder="85.5">
+                                    </div>
+                                    <div class="form-group">
                                         <label for="ayear_id">Academic Year</label>
                                         <select id="ayear_id" name="ayear_id" class="form-control">
                                             <option value="">Select Academic Year</option>
@@ -1803,6 +1837,7 @@ if($ayear_result) {
                                         <th>Batch</th>
                                         <th>Mobile</th>
                                         <th>Email</th>
+                                        <th>Admission Stage</th>
                                         <th>Profile Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -1960,21 +1995,21 @@ if($ayear_result) {
     </div>
 </div>
 
-<!-- Student Details Modal -->
-<div id="studentDetailsModal" class="modal">
-    <div class="modal-dialog">
+<!-- Complete Student Profile Modal -->
+<div id="completeProfileModal" class="modal">
+    <div class="modal-dialog" style="max-width: 1200px;">
         <div class="modal-header">
             <h3>
-                <i class="fas fa-user-plus"></i>
-                Complete Student Details
+                <i class="fas fa-user-graduate"></i>
+                Complete Student Profile
             </h3>
-            <button type="button" class="modal-close" onclick="closeStudentDetailsModal()">
+            <button type="button" class="modal-close" onclick="closeCompleteProfileModal()">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="modal-body">
-            <form id="studentDetailsForm">
-                <input type="hidden" id="student_admission_id" name="admission_id">
+            <form id="completeProfileForm">
+                <input type="hidden" id="complete_admission_id" name="admission_id">
                 
                 <!-- Personal Information Section -->
                 <div class="form-section">
@@ -1984,24 +2019,24 @@ if($ayear_result) {
                     </h4>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="student_sid">Student ID</label>
-                            <input type="text" id="student_sid" name="sid" class="form-control" readonly>
+                            <label for="complete_sid">Student ID</label>
+                            <input type="text" id="complete_sid" name="sid" class="form-control" readonly>
                         </div>
                         <div class="form-group">
-                            <label for="student_fname">First Name</label>
-                            <input type="text" id="student_fname" name="fname" class="form-control" readonly>
+                            <label for="complete_fname">First Name</label>
+                            <input type="text" id="complete_fname" name="fname" class="form-control" readonly>
                         </div>
                         <div class="form-group">
-                            <label for="student_lname">Last Name</label>
-                            <input type="text" id="student_lname" name="lname" class="form-control" readonly>
+                            <label for="complete_lname">Last Name</label>
+                            <input type="text" id="complete_lname" name="lname" class="form-control" readonly>
                         </div>
                         <div class="form-group">
-                            <label for="student_dob">Date of Birth</label>
-                            <input type="date" id="student_dob" name="dob" class="form-control">
+                            <label for="complete_dob">Date of Birth *</label>
+                            <input type="date" id="complete_dob" name="dob" class="form-control" required>
                         </div>
                         <div class="form-group">
-                            <label for="student_gender">Gender</label>
-                            <select id="student_gender" name="gender" class="form-control">
+                            <label for="complete_gender">Gender *</label>
+                            <select id="complete_gender" name="gender" class="form-control" required>
                                 <option value="">Select Gender</option>
                                 <option value="Male">Male</option>
                                 <option value="Female">Female</option>
@@ -2009,35 +2044,73 @@ if($ayear_result) {
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="student_mobile">Mobile Number *</label>
-                            <input type="tel" id="student_mobile" name="mobile" class="form-control" required>
+                            <label for="complete_blood_group">Blood Group</label>
+                            <select id="complete_blood_group" name="blood_group" class="form-control">
+                                <option value="">Select Blood Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label for="student_email">Email Address *</label>
-                            <input type="email" id="student_email" name="email" class="form-control" required>
+                            <label for="complete_religion">Religion</label>
+                            <input type="text" id="complete_religion" name="religion" class="form-control" placeholder="e.g., Hindu, Christian, Muslim">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_caste">Caste/Community</label>
+                            <input type="text" id="complete_caste" name="caste" class="form-control" placeholder="e.g., General, OBC, SC, ST">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_nationality">Nationality</label>
+                            <input type="text" id="complete_nationality" name="nationality" class="form-control" value="Indian">
                         </div>
                     </div>
                 </div>
 
-                <!-- Address Information -->
+                <!-- Contact Information Section -->
                 <div class="form-section">
                     <h4 class="form-section-title">
-                        <i class="fas fa-map-marker-alt"></i>
-                        Address Information
+                        <i class="fas fa-phone"></i>
+                        Contact Information
                     </h4>
                     <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label for="student_address">Complete Address</label>
-                            <textarea id="student_address" name="address" class="form-control" rows="3"></textarea>
+                        <div class="form-group">
+                            <label for="complete_mobile">Mobile Number *</label>
+                            <input type="tel" id="complete_mobile" name="mobile" class="form-control" required placeholder="+91 9876543210">
                         </div>
                         <div class="form-group">
-                            <label for="student_pincode">PIN Code</label>
-                            <input type="text" id="student_pincode" name="pincode" class="form-control">
+                            <label for="complete_email">Email Address *</label>
+                            <input type="email" id="complete_email" name="email" class="form-control" required placeholder="student@example.com">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="complete_address">Complete Address *</label>
+                            <textarea id="complete_address" name="address" class="form-control" rows="3" required placeholder="House/Flat No., Street, Area, Landmark"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_city">City</label>
+                            <input type="text" id="complete_city" name="city" class="form-control" placeholder="City">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_state">State</label>
+                            <input type="text" id="complete_state" name="state" class="form-control" placeholder="State">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_pincode">PIN Code *</label>
+                            <input type="text" id="complete_pincode" name="pincode" class="form-control" required placeholder="600001">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_country">Country</label>
+                            <input type="text" id="complete_country" name="country" class="form-control" value="India">
                         </div>
                     </div>
                 </div>
 
-                <!-- Guardian Information -->
+                <!-- Guardian Information Section -->
                 <div class="form-section">
                     <h4 class="form-section-title">
                         <i class="fas fa-users"></i>
@@ -2045,28 +2118,122 @@ if($ayear_result) {
                     </h4>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="student_fname_father">Father's Name</label>
-                            <input type="text" id="student_fname_father" name="fname_father" class="form-control">
+                            <label for="complete_father_name">Father's Name *</label>
+                            <input type="text" id="complete_father_name" name="father_name" class="form-control" required>
                         </div>
                         <div class="form-group">
-                            <label for="student_fname_mother">Mother's Name</label>
-                            <input type="text" id="student_fname_mother" name="fname_mother" class="form-control">
+                            <label for="complete_mother_name">Mother's Name</label>
+                            <input type="text" id="complete_mother_name" name="mother_name" class="form-control">
                         </div>
                         <div class="form-group">
-                            <label for="student_mobile_guardian">Guardian Mobile</label>
-                            <input type="tel" id="student_mobile_guardian" name="mobile_guardian" class="form-control">
+                            <label for="complete_guardian_mobile">Guardian Mobile</label>
+                            <input type="tel" id="complete_guardian_mobile" name="guardian_mobile" class="form-control" placeholder="+91 9876543210">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_guardian_email">Guardian Email</label>
+                            <input type="email" id="complete_guardian_email" name="guardian_email" class="form-control" placeholder="parent@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_guardian_occupation">Guardian Occupation</label>
+                            <input type="text" id="complete_guardian_occupation" name="guardian_occupation" class="form-control" placeholder="e.g., Engineer, Teacher, Business">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_annual_income">Annual Income (₹)</label>
+                            <input type="number" id="complete_annual_income" name="annual_income" class="form-control" min="0" placeholder="500000">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Background Section -->
+                <div class="form-section">
+                    <h4 class="form-section-title">
+                        <i class="fas fa-graduation-cap"></i>
+                        Academic Background
+                    </h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="complete_tenth_board">10th Board</label>
+                            <input type="text" id="complete_tenth_board" name="tenth_board" class="form-control" placeholder="e.g., CBSE, State Board">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_tenth_year">10th Year of Passing</label>
+                            <input type="number" id="complete_tenth_year" name="tenth_year" class="form-control" min="2000" max="2030" placeholder="2023">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_tenth_percentage">10th Percentage</label>
+                            <input type="number" id="complete_tenth_percentage" name="tenth_percentage" class="form-control" min="0" max="100" step="0.01" placeholder="85.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_twelfth_board">12th Board</label>
+                            <input type="text" id="complete_twelfth_board" name="twelfth_board" class="form-control" placeholder="e.g., CBSE, State Board">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_twelfth_year">12th Year of Passing</label>
+                            <input type="number" id="complete_twelfth_year" name="twelfth_year" class="form-control" min="2000" max="2030" placeholder="2025">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_twelfth_percentage">12th Percentage</label>
+                            <input type="number" id="complete_twelfth_percentage" name="twelfth_percentage" class="form-control" min="0" max="100" step="0.01" placeholder="92.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_entrance_exam">Entrance Exam</label>
+                            <input type="text" id="complete_entrance_exam" name="entrance_exam" class="form-control" placeholder="e.g., JEE, NEET, TNEA">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_entrance_score">Entrance Exam Score</label>
+                            <input type="number" id="complete_entrance_score" name="entrance_score" class="form-control" min="0" placeholder="150">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Contact Section -->
+                <div class="form-section">
+                    <h4 class="form-section-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Emergency Contact
+                    </h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="complete_emergency_name">Emergency Contact Name</label>
+                            <input type="text" id="complete_emergency_name" name="emergency_contact_name" class="form-control" placeholder="Name of emergency contact">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_emergency_relation">Relation</label>
+                            <input type="text" id="complete_emergency_relation" name="emergency_contact_relation" class="form-control" placeholder="e.g., Uncle, Aunt, Friend">
+                        </div>
+                        <div class="form-group">
+                            <label for="complete_emergency_mobile">Emergency Contact Mobile</label>
+                            <input type="tel" id="complete_emergency_mobile" name="emergency_contact_mobile" class="form-control" placeholder="+91 9876543210">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medical Information Section -->
+                <div class="form-section">
+                    <h4 class="form-section-title">
+                        <i class="fas fa-heartbeat"></i>
+                        Medical Information
+                    </h4>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="complete_medical_conditions">Medical Conditions (if any)</label>
+                            <textarea id="complete_medical_conditions" name="medical_conditions" class="form-control" rows="2" placeholder="Any medical conditions, medications, or health issues"></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="complete_allergies">Allergies (if any)</label>
+                            <textarea id="complete_allergies" name="allergies" class="form-control" rows="2" placeholder="Food allergies, drug allergies, etc."></textarea>
                         </div>
                     </div>
                 </div>
             </form>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeStudentDetailsModal()">
+            <button type="button" class="btn btn-secondary" onclick="closeCompleteProfileModal()">
                 Cancel
             </button>
-            <button type="button" class="btn btn-primary" onclick="saveStudentDetails()">
+            <button type="button" class="btn btn-primary" onclick="saveCompleteProfile()">
                 <i class="fas fa-save"></i>
-                Save Details
+                Complete Profile
             </button>
         </div>
     </div>
@@ -2240,6 +2407,34 @@ function updateStudentsTable(students) {
     
     students.forEach(function(student) {
         const profileBadge = getProfileStatusBadge(student.profile_status);
+        const admissionStage = student.admission_stage || 'application_submitted';
+        const stageBadge = getAdmissionStageBadge(admissionStage);
+        
+        // Generate action buttons based on admission stage
+        let actionButtons = `
+            <button class="btn-action btn-primary" onclick="viewStudentProfile('${student.sid}')" title="View Profile">
+                <i class="fas fa-user"></i>
+            </button>
+        `;
+        
+        // Add Complete Profile button if student is confirmed but profile not complete
+        if (admissionStage === 'confirmed_pending_details' || (admissionStage === 'confirmed' && student.profile_status !== 'complete')) {
+            actionButtons += `
+                <button class="btn-action btn-success" onclick="openCompleteProfileModal('${student.admission_id}')" title="Complete Profile">
+                    <i class="fas fa-user-plus"></i>
+                </button>
+            `;
+        }
+        
+        // Add edit button for completed profiles
+        if (admissionStage === 'profile_completed' || student.profile_status === 'complete') {
+            actionButtons += `
+                <button class="btn-action btn-warning" onclick="editStudentDetails('${student.sid}')" title="Edit Details">
+                    <i class="fas fa-edit"></i>
+                </button>
+            `;
+        }
+        
         const row = `
             <tr>
                 <td>${student.sid}</td>
@@ -2249,15 +2444,11 @@ function updateStudentsTable(students) {
                 <td>${student.batch}</td>
                 <td>${student.mobile || 'N/A'}</td>
                 <td>${student.email || 'N/A'}</td>
+                <td>${stageBadge}</td>
                 <td>${profileBadge}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-action btn-primary" onclick="viewStudentProfile('${student.sid}')" title="View Profile">
-                            <i class="fas fa-user"></i>
-                        </button>
-                        <button class="btn-action btn-warning" onclick="editStudentDetails('${student.sid}')" title="Edit Details">
-                            <i class="fas fa-edit"></i>
-                        </button>
+                        ${actionButtons}
                     </div>
                 </td>
             </tr>
@@ -2282,6 +2473,15 @@ function getProfileStatusBadge(status) {
         'Incomplete': '<span class="status-badge status-rejected">Incomplete</span>'
     };
     return badges[status] || badges['Incomplete'];
+}
+
+function getAdmissionStageBadge(stage) {
+    const badges = {
+        'application_submitted': '<span class="status-badge status-pending">Applied</span>',
+        'confirmed_pending_details': '<span class="status-badge status-warning">Confirmed - Pending Details</span>',
+        'profile_completed': '<span class="status-badge status-confirmed">Profile Complete</span>'
+    };
+    return badges[stage] || '<span class="status-badge status-rejected">Unknown</span>';
 }
 
 function saveAdmission() {
@@ -2326,22 +2526,44 @@ function saveAdmission() {
 function confirmStudent(admissionId) {
     Swal.fire({
         title: 'Confirm Student?',
-        text: 'This will move the admission to confirmed students',
+        text: 'This will move the admission to confirmed students and allow you to collect complete details',
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Yes, Confirm',
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+                title: 'Confirming...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             $.post('api.php', { action: 'confirm_student', admission_id: admissionId })
             .done(function(response) {
                 if(response.success) {
-                    Swal.fire('Confirmed!', 'Student has been confirmed', 'success');
+                    Swal.fire({
+                        title: 'Confirmed!',
+                        text: 'Student has been confirmed. Now complete their profile.',
+                        icon: 'success',
+                        confirmButtonText: 'Complete Profile'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            openCompleteProfileModal(admissionId);
+                        }
+                    });
                     loadAdmissions();
+                    loadStudents(); // Refresh students list
                     loadDashboardStats();
                 } else {
                     Swal.fire('Error!', response.message, 'error');
                 }
+            })
+            .fail(function() {
+                Swal.fire('Error!', 'Network error occurred', 'error');
             });
         }
     });
@@ -2382,6 +2604,120 @@ function viewStudentProfile(sid) {
         } else {
             Swal.fire('Error!', 'Student profile not found', 'error');
         }
+    });
+}
+
+// Complete Profile Modal Functions
+function openCompleteProfileModal(admissionId) {
+    console.log('Opening complete profile modal for admission:', admissionId);
+    
+    // Get admission details first
+    fetch('api.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=get_student_details&admission_id=' + admissionId
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const admission = data.data;
+            
+            // Populate the form with existing data
+            document.getElementById('complete_admission_id').value = admissionId;
+            document.getElementById('complete_sid').value = admission.sid || '';
+            document.getElementById('complete_fname').value = admission.fname || '';
+            document.getElementById('complete_lname').value = admission.lname || '';
+            document.getElementById('complete_mobile').value = admission.mobile || '';
+            document.getElementById('complete_email').value = admission.email || '';
+            
+            // Show the modal
+            document.getElementById('completeProfileModal').classList.add('active');
+        } else {
+            console.error('Error fetching admission details:', data.message);
+            Swal.fire('Error', 'Could not load admission details', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Network error occurred', 'error');
+    });
+}
+
+function closeCompleteProfileModal() {
+    document.getElementById('completeProfileModal').classList.remove('active');
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('completeProfileModal');
+    if (event.target === modal) {
+        closeCompleteProfileModal();
+    }
+});
+
+// Close modal with escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('completeProfileModal');
+        if (modal.classList.contains('active')) {
+            closeCompleteProfileModal();
+        }
+    }
+});
+
+function saveCompleteProfile() {
+    const form = document.getElementById('completeProfileForm');
+    const formData = new FormData(form);
+    formData.append('action', 'complete_student_profile');
+
+    // Validate required fields
+    const requiredFields = ['dob', 'gender', 'mobile', 'email', 'address', 'pincode', 'father_name'];
+    let isValid = true;
+    
+    for (const field of requiredFields) {
+        const element = form.querySelector(`[name="${field}"]`);
+        if (element && !element.value.trim()) {
+            element.style.borderColor = '#dc3545';
+            isValid = false;
+        } else if (element) {
+            element.style.borderColor = '#e9ecef';
+        }
+    }
+
+    if (!isValid) {
+        Swal.fire('Error', 'Please fill in all required fields', 'error');
+        return;
+    }
+
+    // Show loading
+    Swal.fire({
+        title: 'Saving Profile...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    fetch('api.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Success', 'Student profile completed successfully!', 'success');
+            closeCompleteProfileModal();
+            loadStudents(); // Refresh the students table
+            loadDashboardStats(); // Update stats
+        } else {
+            Swal.fire('Error', data.message || 'Failed to save profile', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Network error occurred', 'error');
     });
 }
 
