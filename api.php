@@ -139,7 +139,7 @@ function handleSaveAdmission($conn) {
     $marks_percentage = floatval($_POST['marks_percentage'] ?? 0);
 
     // Check if SID already exists
-    $check_sql = "SELECT id FROM admission WHERE sid = '$sid'";
+    $check_sql = "SELECT admission_id FROM admission WHERE sid = '$sid'";
     $check_result = $conn->query($check_sql);
 
     if ($check_result && $check_result->num_rows > 0) {
@@ -149,7 +149,7 @@ function handleSaveAdmission($conn) {
 
     // Insert admission record with enhanced fields
     $sql = "INSERT INTO admission (
-                application_number, sid, fname, lname, dob, gender, mobile, email, 
+                admission_id, sid, fname, lname, dob, gender, mobile, email, 
                 programme, department, batch, doadmission, admission_category, admission_type,
                 previous_education, marks_percentage, status, ayear_id, admitted_by, 
                 admission_stage, created_at

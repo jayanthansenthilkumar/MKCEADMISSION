@@ -2306,6 +2306,45 @@ function loadDashboardStats() {
     });
 }
 
+function saveAdmission() {
+    const formData = new FormData($('#admissionForm')[0]);
+    
+    formData.append('action', 'save_admission');
+    
+    $.ajax({
+        url: 'api.php',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if(response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Admission saved successfully',
+                    timer: 2000
+                });
+                $('#admissionForm')[0].reset();
+                loadAdmissions();
+                loadDashboardStats();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response.message || 'Failed to save admission'
+                });
+            }
+        },
+        error: function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error occurred'
+            });
+        }
+    });
+}
 function updateStatsDisplay(stats) {
     $('#totalApplications').text(stats.total_applications || 0);
     $('#pendingReview').text(stats.pending_review || 0);
@@ -2484,44 +2523,7 @@ function getAdmissionStageBadge(stage) {
     return badges[stage] || '<span class="status-badge status-rejected">Unknown</span>';
 }
 
-function saveAdmission() {
-    const formData = new FormData($('#admissionForm')[0]);
-    formData.append('action', 'save_admission');
-    
-    $.ajax({
-        url: 'api.php',
-        method: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            if(response.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: 'Admission saved successfully',
-                    timer: 2000
-                });
-                $('#admissionForm')[0].reset();
-                loadAdmissions();
-                loadDashboardStats();
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: response.message || 'Failed to save admission'
-                });
-            }
-        },
-        error: function() {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: 'Network error occurred'
-            });
-        }
-    });
-}
+
 
 function confirmStudent(admissionId) {
     Swal.fire({
